@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Employees - Time & Task Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.7/dayjs.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7fafc;
+        }
+        /* Custom Orange Theme */
+        .bg-orange-primary { background-color: #f97316; }
+        .bg-orange-secondary { background-color: #fb923c; }
+        .text-orange-primary { color: #f97316; }
+        .border-orange-primary { border-color: #f97316; }
+        .ring-orange-primary { --tw-ring-color: #f97316; }
+        .btn-primary {
+            background-color: #f97316;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        .btn-primary:hover {
+            background-color: #ea580c;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #f97316;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="antialiased text-slate-700">
+
+    <!-- App Container -->
+    <div id="app" class="container mx-auto p-4 max-w-7xl">
+
+        <!-- Header -->
+        <header class="bg-white shadow-md rounded-lg p-4 mb-6 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-orange-primary">My Employees</h1>
+            <div id="userInfo" class="hidden text-right">
+                <p class="font-semibold" id="userName"></p>
+                <p class="text-sm text-gray-500" id="userDept"></p>
+                <button id="logoutButton" class="text-sm text-red-500 hover:underline">Logout</button>
+            </div>
+        </header>
+
+        <!-- Loading Spinner -->
+        <div id="loading" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
+            <div class="loader"></div>
+        </div>
+
+        <!-- Login Section -->
+        <section id="loginSection" class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-lg">
+            <h2 class="text-2xl font-bold text-center mb-6">Employee Login</h2>
+            <form id="loginForm">
+                <div class="mb-4">
+                    <label for="employeeId" class="block text-sm font-medium mb-1">Employee ID</label>
+                    <input type="text" id="employeeId" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 ring-orange-primary" placeholder="e.g., DM0001" required>
+                </div>
+                <div class="mb-4">
+                    <label for="email" class="block text-sm font-medium mb-1">Email</label>
+                    <input type="email" id="email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 ring-orange-primary" placeholder="you@example.com" required>
+                </div>
+                <div class="mb-6">
+                    <label for="password" class="block text-sm font-medium mb-1">Password / Security Key</label>
+                    <input type="password" id="password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 ring-orange-primary" required>
+                </div>
+                <button type="submit" class="w-full btn-primary font-bold py-2 px-4 rounded-md">Login</button>
+                <p id="loginError" class="text-red-500 text-sm mt-4 text-center"></p>
+            </form>
+        </section>
+
+        <!-- Main Dashboard (Initially Hidden) -->
+        <main id="dashboard" class="hidden">
+            <!-- Employee View -->
+            <div id="employeeView">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Time Clock -->
+                    <div class="bg-white p-6 rounded-lg shadow-md lg:col-span-1">
+                        <h3 class="text-xl font-semibold mb-4">Time Clock</h3>
+                        <div class="text-2xl font-bold text-center mb-4" id="currentTime"></div>
+                        <div class="flex flex-col gap-3">
+                            <button id="clockInBtn" class="btn-primary py-3 px-4 rounded-md font-semibold">Clock In</button>
+                            <button id="clockOutBtn" class="bg-gray-700 text-white hover:bg-gray-800 py-3 px-4 rounded-md font-semibold hidden">Clock Out</button>
+                        </div>
+                        <div id="workDoneDiv" class="mt-4 hidden">
+                             <label for="workDone" class="block text-sm font-medium mb-1">Work Done Today</label>
+                             <textarea id="workDone" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 ring-orange-primary" placeholder="Briefly describe your work..."></textarea>
+                             <button id="refineWorkDoneBtn" class="w-full mt-2 bg-orange-secondary text-white hover:bg-orange-primary py-2 px-4 rounded-md font-semibold">✨ Refine Summary with AI</button>
+                             <button id="submitWorkDoneBtn" class="w-full mt-2 btn-primary py-2 px-4 rounded-md font-semibold">Submit & Clock Out</button>
+                        </div>
+                        <p id="timeLogError" class="text-red-500 text-sm mt-2"></p>
+                        <p id="timeLogSuccess" class="text-green-500 text-sm mt-2"></p>
+                    </div>
+
+                    <!-- Upcoming Meeting -->
+                    <div class="bg-white p-6 rounded-lg shadow-md lg:col-span-2">
+                        <h3 class="text-xl font-semibold mb-4">Upcoming Meeting</h3>
+                        <div id="meetingDetails">
+                            <p class="text-gray-500">No upcoming meetings.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- My Tasks -->
+                    <div class="bg-white p-6 rounded-lg shadow-md lg:col-span-3">
+                        <h3 class="text-xl font-semibold mb-4">My Tasks & Deadlines</h3>
+                        <div id="tasksList" class="space-y-4">
+                           <p class="text-gray-500">You have no assigned tasks.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin View -->
+            <div id="adminView" class="hidden">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-bold mb-4">Admin Dashboard</h2>
+                    
+                    <!-- Department Selection -->
+                    <div class="mb-6">
+                        <h3 class="text-xl font-semibold mb-3">Select Department to Manage</h3>
+                        <div id="departmentTabs" class="flex space-x-2 border-b">
+                            <button data-dept="DM" class="dept-tab py-2 px-4 font-medium border-b-2 border-orange-primary text-orange-primary">Digital Marketing</button>
+                            <button data-dept="EM" class="dept-tab py-2 px-4 font-medium text-gray-500 border-transparent">Ecommerce</button>
+                            <button data-dept="FB" class="dept-tab py-2 px-4 font-medium text-gray-500 border-transparent">Food & Beverages</button>
+                        </div>
+                    </div>
+                    
+                    <div id="adminContent" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <!-- Delegate Tasks -->
+                        <div>
+                            <h3 class="text-xl font-semibold mb-4">Delegate Task</h3>
+                            <div class="space-y-4 p-4 border rounded-lg">
+                                <div class="mb-4">
+                                    <label for="taskEmployee" class="block text-sm font-medium mb-1">Assign To</label>
+                                    <select id="taskEmployee" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 ring-orange-primary">
+                                        <!-- Options populated by JS -->
+                                    </select>
+                                </div>
+                                <div class="mb-4">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label for="taskDescription" class="block text-sm font-medium">Task Description</label>
+                                        <button id="generateTaskDescBtn" class="text-xs bg-orange-secondary text-white px-2 py-1 rounded-md hover:bg-orange-primary">✨ Generate</button>
+                                    </div>
+                                    <textarea id="taskDescription" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 ring-orange-primary" placeholder="Describe the task or enter a title and click 'Generate'"></textarea>
+                                </div>
+                                <div class="mb-4">
+                                    <label for="taskDeadline" class="block text-sm font-medium mb-1">Deadline</label>
+                                    <input type="date" id="taskDeadline" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 ring-orange-primary">
+                                </div>
+                                <button id="delegateTaskBtn" class="w-full btn-primary py-2 px-4 rounded-md font-semibold">Delegate Task</button>
+                                <p id="delegateSuccess" class="text-green-500 text-sm mt-2"></p>
+                                <p id="delegateError" class="text-red-500 text-sm mt-2"></p>
+                            </div>
+                        </div>
+                        
+                        <!-- Mark Attendance -->
+                        <div>
+                            <h3 class="text-xl font-semibold mb-4">Mark Attendance</h3>
+                             <div class="space-y-4 p-4 border rounded-lg">
+                                 <div class="mb-4">
+                                    <label for="attendanceDate" class="block text-sm font-medium mb-1">Select Date</label>
+                                    <input type="date" id="attendanceDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 ring-orange-primary">
+                                </div>
+                                <div id="attendanceList" class="space-y-3 max-h-96 overflow-y-auto">
+                                   <!-- Employee list populated by JS -->
+                                   <p class="text-gray-500">Select a date and department to see employees.</p>
+                                </div>
+                                <button id="saveAttendanceBtn" class="w-full mt-4 btn-primary py-2 px-4 rounded-md font-semibold">Save Attendance</button>
+                                <p id="attendanceSuccess" class="text-green-500 text-sm mt-2"></p>
+                                <p id="attendanceError" class="text-red-500 text-sm mt-2"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // !!! IMPORTANT !!!
+            // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
+            const GAS_URL = 'https://script.google.com/macros/s/AKfycbykxzORIqAqpYVNeHNmNpDhMdtehbOqr0m3NtzN5xSpXmYLyqAIFZHgk6eQxzNrgHT9Nw/exec'; // e.g. 'https://script.google.com/macros/s/...'
+
+            if (!GAS_URL) {
+                document.getElementById('app').innerHTML = `
+                    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 max-w-2xl mx-auto rounded-md" role="alert">
+                      <p class="font-bold">Configuration Error</p>
+                      <p>The Google Apps Script URL is missing. Please follow the setup instructions in the README.md file, deploy your script, and paste the URL into the <code>GAS_URL</code> variable in the <code>index.html</code> file.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // State Management
+            let currentUser = null;
+            let currentAdminDept = 'DM';
+
+            // DOM Elements
+            const loadingEl = document.getElementById('loading');
+            const loginSection = document.getElementById('loginSection');
+            const dashboard = document.getElementById('dashboard');
+            const loginForm = document.getElementById('loginForm');
+            const loginError = document.getElementById('loginError');
+            const userInfo = document.getElementById('userInfo');
+            const userNameEl = document.getElementById('userName');
+            const userDeptEl = document.getElementById('userDept');
+            const logoutButton = document.getElementById('logoutButton');
+
+            const employeeView = document.getElementById('employeeView');
+            const adminView = document.getElementById('adminView');
+
+            // --- Utility Functions ---
+            const showLoading = (show) => loadingEl.classList.toggle('hidden', !show);
+            const clearMessages = () => {
+                document.querySelectorAll('.text-red-500, .text-green-500').forEach(el => el.textContent = '');
+            };
+
+            const deptMap = {
+                'DM': 'Digital Marketing',
+                'EM': 'Ecommerce',
+                'FB': 'Food & Beverages'
+            };
+
+            // --- Gemini API Call Function ---
+            async function callGemini(prompt) {
+                showLoading(true);
+                // The API key is left as an empty string.
+                // The Canvas environment will automatically provide a key for API calls.
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: prompt }] }],
+                };
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`API call failed with status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    const candidate = result.candidates?.[0];
+
+                    if (candidate && candidate.content?.parts?.[0]?.text) {
+                        return { success: true, text: candidate.content.parts[0].text };
+                    } else {
+                        console.error('Unexpected Gemini API response structure:', result);
+                        throw new Error('Could not extract text from Gemini response.');
+                    }
+                } catch (error) {
+                    console.error('Gemini API Error:', error);
+                    // Do not use alert() as it's blocked in iframes.
+                    // Instead, we can show an error in a specific UI element if needed,
+                    // but for now, logging to console is sufficient for debugging.
+                    return { success: false, text: null };
+                } finally {
+                    showLoading(false);
+                }
+            }
+
+
+            // --- Google Apps Script API Call Function ---
+            async function apiCall(action, payload) {
+                showLoading(true);
+                clearMessages();
+                try {
+                    const response = await fetch(GAS_URL, {
+                        method: 'POST',
+                        mode: 'cors',
+                        credentials: 'omit',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ action, ...payload })
+                    });
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    const result = await response.json();
+                    if (result.status === 'error') throw new Error(result.message);
+                    return result;
+                } catch (error) {
+                    console.error('API Call Error:', error);
+                    // A custom modal or inline message is better than alert().
+                    // For this app, we'll log the error and let specific handlers show UI feedback.
+                    return { status: 'error', message: error.message };
+                } finally {
+                    showLoading(false);
+                }
+            }
+
+            // --- Authentication ---
+            function checkSession() {
+                const user = sessionStorage.getItem('currentUser');
+                if (user) {
+                    currentUser = JSON.parse(user);
+                    showDashboard();
+                }
+            }
+
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const employeeId = document.getElementById('employeeId').value.trim();
+                const email = document.getElementById('email').value.trim();
+                const password = document.getElementById('password').value;
+                
+                const result = await apiCall('login', { employeeId, email, password });
+
+                if (result.status === 'success') {
+                    currentUser = result.user;
+                    sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    showDashboard();
+                } else {
+                    loginError.textContent = result.message || 'Invalid credentials.';
+                }
+            });
+
+            logoutButton.addEventListener('click', () => {
+                currentUser = null;
+                sessionStorage.removeItem('currentUser');
+                loginSection.classList.remove('hidden');
+                dashboard.classList.add('hidden');
+                userInfo.classList.add('hidden');
+            });
+            
+            // --- Dashboard Rendering ---
+            function showDashboard() {
+                loginSection.classList.add('hidden');
+                dashboard.classList.remove('hidden');
+                userInfo.classList.remove('hidden');
+
+                userNameEl.textContent = `Welcome, ${currentUser.name}`;
+                userDeptEl.textContent = `Dept: ${deptMap[currentUser.department]}`;
+
+                if (currentUser.role === 'admin') {
+                    adminView.classList.remove('hidden');
+                    employeeView.classList.add('hidden');
+                    initializeAdminView();
+                } else {
+                    employeeView.classList.remove('hidden');
+                    adminView.classList.add('hidden');
+                    initializeEmployeeView();
+                }
+            }
+
+            // --- Employee View Logic ---
+            const clockInBtn = document.getElementById('clockInBtn');
+            const clockOutBtn = document.getElementById('clockOutBtn');
+            const workDoneDiv = document.getElementById('workDoneDiv');
+            const submitWorkDoneBtn = document.getElementById('submitWorkDoneBtn');
+            const refineWorkDoneBtn = document.getElementById('refineWorkDoneBtn');
+            const timeLogSuccess = document.getElementById('timeLogSuccess');
+            const timeLogError = document.getElementById('timeLogError');
+            
+            function initializeEmployeeView() {
+                updateTime();
+                setInterval(updateTime, 1000);
+                loadEmployeeData();
+            }
+
+            function updateTime() {
+                document.getElementById('currentTime').textContent = dayjs().format('h:mm:ss A');
+            }
+            
+            async function loadEmployeeData() {
+                const result = await apiCall('getEmployeeData', { employeeId: currentUser.id });
+                if (result.status === 'success') {
+                    // Update Time Clock state
+                    if(result.lastLog === 'IN') {
+                        clockInBtn.classList.add('hidden');
+                        clockOutBtn.classList.remove('hidden');
+                    } else {
+                        clockInBtn.classList.remove('hidden');
+                        clockOutBtn.classList.add('hidden');
+                    }
+
+                    // Render Tasks
+                    const tasksList = document.getElementById('tasksList');
+                    if (result.tasks && result.tasks.length > 0) {
+                        tasksList.innerHTML = result.tasks.map(task => `
+                            <div class="border rounded-lg p-4 flex justify-between items-start">
+                                <div>
+                                    <p class="font-semibold">${task.description}</p>
+                                    <p class="text-sm text-red-600">Deadline: ${dayjs(task.deadline).format('MMMM D, YYYY')}</p>
+                                </div>
+                                <span class="text-sm font-medium px-3 py-1 rounded-full ${task.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${task.status}</span>
+                            </div>
+                        `).join('');
+                    } else {
+                         tasksList.innerHTML = `<p class="text-gray-500">You have no assigned tasks.</p>`;
+                    }
+                    
+                    // Render Meeting
+                    const meetingDetails = document.getElementById('meetingDetails');
+                    if(result.meeting) {
+                        const meeting = result.meeting;
+                        meetingDetails.innerHTML = `
+                             <h4 class="font-bold text-lg">${meeting.title}</h4>
+                             <p class="text-gray-600 mb-2"><strong>Date & Time:</strong> ${dayjs(meeting.dateTime).format('MMMM D, YYYY h:mm A')}</p>
+                             <p class="text-gray-600 mb-3">${meeting.details}</p>
+                             <a href="${meeting.link}" target="_blank" class="inline-block btn-primary text-white font-semibold py-2 px-5 rounded-md">Join Google Meet</a>
+                        `;
+                    } else {
+                         meetingDetails.innerHTML = `<p class="text-gray-500">No upcoming meetings.</p>`;
+                    }
+                }
+            }
+
+            clockInBtn.addEventListener('click', async () => {
+                const result = await apiCall('clockIn', { employeeId: currentUser.id });
+                if (result.status === 'success') {
+                    timeLogSuccess.textContent = 'Successfully clocked in!';
+                    clockInBtn.classList.add('hidden');
+                    clockOutBtn.classList.remove('hidden');
+                } else {
+                    timeLogError.textContent = result.message;
+                }
+            });
+
+            clockOutBtn.addEventListener('click', () => {
+                workDoneDiv.classList.remove('hidden');
+                clockOutBtn.classList.add('hidden');
+            });
+
+            refineWorkDoneBtn.addEventListener('click', async () => {
+                const workDoneTextarea = document.getElementById('workDone');
+                const originalText = workDoneTextarea.value;
+
+                if (!originalText.trim()) {
+                    timeLogError.textContent = 'Please write something about your work first.';
+                    return;
+                }
+                
+                clearMessages();
+                const prompt = `Act as a helpful assistant. Refine the following daily work summary into a more professional and structured format. Use bullet points for clarity and ensure the tone is suitable for a workplace report. Keep it concise. Original text: "${originalText}"`;
+                const result = await callGemini(prompt);
+                
+                if (result.success) {
+                    workDoneTextarea.value = result.text;
+                    timeLogSuccess.textContent = 'Summary refined by AI!';
+                } else {
+                    timeLogError.textContent = 'AI refinement failed. Please try again.';
+                }
+            });
+            
+            submitWorkDoneBtn.addEventListener('click', async () => {
+                const workDone = document.getElementById('workDone').value;
+                if (!workDone) {
+                    timeLogError.textContent = 'Please describe the work you did.';
+                    return;
+                }
+                const result = await apiCall('clockOut', { employeeId: currentUser.id, workDone });
+                if (result.status === 'success') {
+                    timeLogSuccess.textContent = 'Successfully clocked out!';
+                    workDoneDiv.classList.add('hidden');
+                    document.getElementById('workDone').value = '';
+                    clockInBtn.classList.remove('hidden');
+                } else {
+                     timeLogError.textContent = result.message;
+                }
+            });
+
+
+            // --- Admin View Logic ---
+            function initializeAdminView() {
+                const today = dayjs().format('YYYY-MM-DD');
+                document.getElementById('attendanceDate').value = today;
+                document.getElementById('taskDeadline').min = today;
+                
+                loadAdminDepartmentData(currentAdminDept);
+
+                document.querySelectorAll('.dept-tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        currentAdminDept = tab.dataset.dept;
+                        document.querySelectorAll('.dept-tab').forEach(t => {
+                            t.classList.remove('border-orange-primary', 'text-orange-primary');
+                            t.classList.add('text-gray-500', 'border-transparent');
+                        });
+                        tab.classList.add('border-orange-primary', 'text-orange-primary');
+                        tab.classList.remove('text-gray-500', 'border-transparent');
+                        loadAdminDepartmentData(currentAdminDept);
+                    });
+                });
+                
+                document.getElementById('attendanceDate').addEventListener('change', () => {
+                     loadAdminDepartmentData(currentAdminDept);
+                });
+                
+                document.getElementById('delegateTaskBtn').addEventListener('click', delegateTask);
+                document.getElementById('saveAttendanceBtn').addEventListener('click', saveAttendance);
+                document.getElementById('generateTaskDescBtn').addEventListener('click', generateTaskDescription);
+            }
+            
+            async function loadAdminDepartmentData(department) {
+                const date = document.getElementById('attendanceDate').value;
+                const result = await apiCall('getDepartmentData', { department, date });
+
+                if (result.status === 'success') {
+                    // Populate employee dropdown for tasks
+                    const taskEmployeeSelect = document.getElementById('taskEmployee');
+                    taskEmployeeSelect.innerHTML = result.employees.map(emp => `<option value="${emp.id}">${emp.name} (${emp.id})</option>`).join('');
+
+                    // Populate attendance list
+                    const attendanceList = document.getElementById('attendanceList');
+                    if(result.employees.length > 0) {
+                       attendanceList.innerHTML = result.employees.map(emp => {
+                           const currentStatus = emp.attendanceStatus || 'Present (Office)';
+                           return `
+                            <div class="flex items-center justify-between p-2 border-b">
+                                <span>${emp.name}</span>
+                                <select data-employee-id="${emp.id}" class="attendance-status w-48 px-2 py-1 border border-gray-300 rounded-md text-sm">
+                                    <option ${currentStatus === 'Present (Office)' ? 'selected' : ''}>Present (Office)</option>
+                                    <option ${currentStatus === 'Present (WFH)' ? 'selected' : ''}>Present (WFH)</option>
+                                    <option ${currentStatus === 'Absent' ? 'selected' : ''}>Absent</option>
+                                    <option ${currentStatus === 'Leave' ? 'selected' : ''}>Leave</option>
+                                    <option ${currentStatus === 'Half Day' ? 'selected' : ''}>Half Day</option>
+                                    <option ${currentStatus === 'Holiday' ? 'selected' : ''}>Holiday</option>
+                                </select>
+                            </div>
+                           `;
+                       }).join('');
+                    } else {
+                         attendanceList.innerHTML = `<p class="text-gray-500">No employees found in this department.</p>`;
+                    }
+                }
+            }
+
+            async function generateTaskDescription() {
+                const taskDescriptionTextarea = document.getElementById('taskDescription');
+                const delegateError = document.getElementById('delegateError');
+                const delegateSuccess = document.getElementById('delegateSuccess');
+                const taskTitle = taskDescriptionTextarea.value;
+                
+                if (!taskTitle.trim()) {
+                    delegateError.textContent = 'Please provide a title for the task first.';
+                    return;
+                }
+
+                clearMessages();
+                const prompt = `Act as a project manager. Expand the following task title into a clear, detailed, and actionable task description for an employee. Include sections for 'Objective', 'Key Steps' (as bullet points), and 'Expected Outcome'. Task Title: "${taskTitle}"`;
+                const result = await callGemini(prompt);
+                
+                if (result.success) {
+                    taskDescriptionTextarea.value = result.text;
+                    delegateSuccess.textContent = 'Description generated by AI!';
+                } else {
+                    delegateError.textContent = 'AI generation failed. Please try again.';
+                }
+            }
+            
+            async function delegateTask() {
+                const employeeId = document.getElementById('taskEmployee').value;
+                const description = document.getElementById('taskDescription').value;
+                const deadline = document.getElementById('taskDeadline').value;
+                const delegateError = document.getElementById('delegateError');
+                const delegateSuccess = document.getElementById('delegateSuccess');
+
+                if(!employeeId || !description || !deadline) {
+                    delegateError.textContent = 'All fields are required.';
+                    return;
+                }
+                
+                const result = await apiCall('delegateTask', { employeeId, description, deadline });
+                if (result.status === 'success') {
+                    delegateSuccess.textContent = 'Task delegated successfully!';
+                    document.getElementById('taskDescription').value = '';
+                    document.getElementById('taskDeadline').value = '';
+                } else {
+                    delegateError.textContent = result.message;
+                }
+            }
+            
+            async function saveAttendance() {
+                const date = document.getElementById('attendanceDate').value;
+                const attendanceError = document.getElementById('attendanceError');
+                const attendanceSuccess = document.getElementById('attendanceSuccess');
+
+                if(!date) {
+                    attendanceError.textContent = 'Please select a date.';
+                    return;
+                }
+                
+                const attendanceData = [];
+                document.querySelectorAll('.attendance-status').forEach(select => {
+                    attendanceData.push({
+                        employeeId: select.dataset.employeeId,
+                        status: select.value
+                    });
+                });
+
+                if(attendanceData.length === 0) {
+                    attendanceError.textContent = 'No employees to mark attendance for.';
+                    return;
+                }
+                
+                const result = await apiCall('markAttendance', { date, attendanceData });
+
+                if (result.status === 'success') {
+                    attendanceSuccess.textContent = 'Attendance saved successfully!';
+                } else {
+                    attendanceError.textContent = result.message;
+                }
+            }
+
+
+            // Initial Load
+            checkSession();
+        });
+    </script>
+</body>
+</html>
+
