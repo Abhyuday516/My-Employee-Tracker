@@ -3,285 +3,263 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Employees - Time & Task Tracker</title>
+    <title>My Employees - V2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.7/dayjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.7/plugin/isToday.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.7/plugin/isTomorrow.js"></script>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f7fafc;
-        }
-        /* Custom Orange Theme */
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
         .bg-orange-primary { background-color: #f97316; }
-        .bg-orange-secondary { background-color: #fb923c; }
         .text-orange-primary { color: #f97316; }
         .border-orange-primary { border-color: #f97316; }
-        .ring-orange-primary { --tw-ring-color: #f97316; }
-        .btn-primary {
-            background-color: #f97316;
-            color: white;
-            transition: background-color 0.3s;
-        }
-        .btn-primary:hover {
-            background-color: #ea580c;
-        }
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #f97316;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        .btn-primary { background-color: #f97316; color: white; transition: background-color 0.3s; }
+        .btn-primary:hover { background-color: #ea580c; }
+        .btn-danger { background-color: #dc2626; color: white; transition: background-color: 0.3s; }
+        .btn-danger:hover { background-color: #b91c1c; }
+        .modal-overlay { transition: opacity 0.3s ease; }
+        .modal-content { transition: transform 0.3s ease; }
+        .task-filter-btn.active { background-color: #f97316; color: white; border-color: #f97316; }
+        .task-filter-btn { background-color: #e5e7eb; color: #374151; border-color: #e5e7eb;}
     </style>
 </head>
-<body class="antialiased text-slate-700">
+<body class="antialiased text-slate-800">
 
     <!-- App Container -->
-    <div id="app" class="container mx-auto p-4 max-w-7xl">
+    <div id="app" class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
 
         <!-- Header -->
-        <header class="bg-white shadow-md rounded-lg p-4 mb-6 flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-orange-primary">My Employees</h1>
-            <div id="userInfo" class="hidden text-right">
-                <p class="font-semibold" id="userName"></p>
+        <header class="bg-white shadow-md rounded-lg p-4 mb-6 flex justify-between items-center relative h-20">
+            <div id="userInfo" class="hidden absolute left-4 top-1/2 -translate-y-1/2">
+                <p class="font-semibold text-lg" id="userName"></p>
                 <p class="text-sm text-gray-500" id="userDept"></p>
-                <button id="logoutButton" class="text-sm text-red-500 hover:underline">Logout</button>
+            </div>
+             <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                <h1 class="text-3xl font-bold text-orange-primary text-center">My Employees</h1>
+            </div>
+            <div class="absolute right-4 top-1/2 -translate-y-1/2">
+                 <button id="logoutButton" class="hidden text-sm font-medium text-red-600 hover:underline">Logout</button>
             </div>
         </header>
 
-        <!-- Loading Spinner -->
-        <div id="loading" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
-            <div class="loader"></div>
+        <!-- Loading Spinner & General Message Area -->
+        <div id="loading" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center hidden z-50">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-orange-primary"></div>
         </div>
+        <div id="message-toast" class="hidden fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-xl transition-opacity duration-300 z-50"></div>
 
         <!-- Login Section -->
-        <section id="loginSection" class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-lg">
+        <section id="loginSection" class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-xl mt-10">
             <h2 class="text-2xl font-bold text-center mb-6">Employee Login</h2>
             <form id="loginForm">
                 <div class="mb-4">
                     <label for="employeeId" class="block text-sm font-medium mb-1">Employee ID</label>
-                    <input type="text" id="employeeId" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 ring-orange-primary" placeholder="e.g., DM0001" required>
+                    <input type="text" id="employeeId" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-primary" required>
                 </div>
                 <div class="mb-4">
                     <label for="email" class="block text-sm font-medium mb-1">Email</label>
-                    <input type="email" id="email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 ring-orange-primary" placeholder="you@example.com" required>
+                    <input type="email" id="email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-primary" required>
                 </div>
                 <div class="mb-6">
-                    <label for="password" class="block text-sm font-medium mb-1">Password / Security Key</label>
-                    <input type="password" id="password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 ring-orange-primary" required>
+                    <label for="password" class="block text-sm font-medium mb-1">Password</label>
+                    <input type="password" id="password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-primary" required>
                 </div>
-                <button type="submit" class="w-full btn-primary font-bold py-2 px-4 rounded-md">Login</button>
+                <button type="submit" class="w-full btn-primary font-bold py-2.5 px-4 rounded-md">Login</button>
                 <p id="loginError" class="text-red-500 text-sm mt-4 text-center"></p>
             </form>
+            <div class="text-center mt-6 text-sm text-gray-500">
+                <p>Having trouble? Contact us at <a href="mailto:3103abhyuday@gmail.com" class="text-orange-primary hover:underline">3103abhyuday@gmail.com</a></p>
+                <p class="mt-2 text-xs italic">Note: Phone/OTP login is a premium feature and not available in this version.</p>
+            </div>
         </section>
 
         <!-- Main Dashboard (Initially Hidden) -->
         <main id="dashboard" class="hidden">
-            <!-- Employee View -->
-            <div id="employeeView">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <!-- Time Clock -->
-                    <div class="bg-white p-6 rounded-lg shadow-md lg:col-span-1">
-                        <h3 class="text-xl font-semibold mb-4">Time Clock</h3>
-                        <div class="text-2xl font-bold text-center mb-4" id="currentTime"></div>
-                        <div class="flex flex-col gap-3">
-                            <button id="clockInBtn" class="btn-primary py-3 px-4 rounded-md font-semibold">Clock In</button>
-                            <button id="clockOutBtn" class="bg-gray-700 text-white hover:bg-gray-800 py-3 px-4 rounded-md font-semibold hidden">Clock Out</button>
-                        </div>
-                        <div id="workDoneDiv" class="mt-4 hidden">
-                             <label for="workDone" class="block text-sm font-medium mb-1">Work Done Today</label>
-                             <textarea id="workDone" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 ring-orange-primary" placeholder="Briefly describe your work..."></textarea>
-                             <button id="refineWorkDoneBtn" class="w-full mt-2 bg-orange-secondary text-white hover:bg-orange-primary py-2 px-4 rounded-md font-semibold">✨ Refine Summary with AI</button>
-                             <button id="submitWorkDoneBtn" class="w-full mt-2 btn-primary py-2 px-4 rounded-md font-semibold">Submit & Clock Out</button>
-                        </div>
-                        <p id="timeLogError" class="text-red-500 text-sm mt-2"></p>
-                        <p id="timeLogSuccess" class="text-green-500 text-sm mt-2"></p>
-                    </div>
-
-                    <!-- Upcoming Meeting -->
-                    <div class="bg-white p-6 rounded-lg shadow-md lg:col-span-2">
-                        <h3 class="text-xl font-semibold mb-4">Upcoming Meeting</h3>
-                        <div id="meetingDetails">
-                            <p class="text-gray-500">No upcoming meetings.</p>
-                        </div>
-                    </div>
-                    
+            <!-- Universal View for All Employees -->
+            <div id="universalView">
+                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <!-- My Tasks -->
-                    <div class="bg-white p-6 rounded-lg shadow-md lg:col-span-3">
-                        <h3 class="text-xl font-semibold mb-4">My Tasks & Deadlines</h3>
-                        <div id="tasksList" class="space-y-4">
+                    <div class="bg-white p-6 rounded-lg shadow-md lg:col-span-2">
+                        <div class="flex justify-between items-center mb-4">
+                             <h3 class="text-xl font-semibold">My Tasks</h3>
+                             <button id="openDelegateTaskModalBtn" class="btn-primary text-sm font-semibold py-2 px-4 rounded-md">Delegate Task</button>
+                        </div>
+                        <div class="flex space-x-2 mb-4 border-b pb-2">
+                            <button class="task-filter-btn py-1 px-3 rounded-md text-sm font-medium border active" data-filter="today">Today</button>
+                            <button class="task-filter-btn py-1 px-3 rounded-md text-sm font-medium border" data-filter="tomorrow">Tomorrow</button>
+                            <button class="task-filter-btn py-1 px-3 rounded-md text-sm font-medium border" data-filter="next3days">Next 3 Days</button>
+                            <button class="task-filter-btn py-1 px-3 rounded-md text-sm font-medium border" data-filter="all">All</button>
+                        </div>
+                        <div id="tasksList" class="space-y-3 max-h-96 overflow-y-auto">
                            <p class="text-gray-500">You have no assigned tasks.</p>
                         </div>
                     </div>
+                    <!-- Right Column Wrapper -->
+                    <div class="space-y-6">
+                        <!-- Time Clock (RESTORED) -->
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-xl font-semibold mb-2">Time Clock</h3>
+                            <div class="text-center">
+                                <p class="text-sm text-gray-500 mb-2">Your current status is:</p>
+                                <p id="clockStatusText" class="text-2xl font-bold mb-4">-</p>
+                                <button id="clockButton" class="w-full font-bold py-2.5 px-4 rounded-md">Loading...</button>
+                            </div>
+                        </div>
+
+                        <!-- My Attendance -->
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                           <h3 class="text-xl font-semibold mb-4">My Attendance</h3>
+                           <div class="space-y-3 mb-4">
+                              <label for="workLocation" class="block text-sm font-medium">Mark Today's Attendance:</label>
+                              <select id="workLocation" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-primary">
+                                  <option>Work from Home</option>
+                                  <option>In Office</option>
+                                  <option>On Leave</option>
+                              </select>
+                              <button id="submitAttendanceBtn" class="w-full btn-primary font-semibold py-2 px-4 rounded-md">Submit for Approval</button>
+                           </div>
+                           <div class="border-t pt-4">
+                               <h4 class="font-semibold mb-2">My Recent Requests</h4>
+                               <div id="attendanceHistory" class="space-y-2 text-sm max-h-48 overflow-y-auto">
+                                   <p class="text-gray-500">No recent requests found.</p>
+                               </div>
+                           </div>
+                       </div>
+                    </div>
+                    <!-- Meetings -->
+                    <div class="bg-white p-6 rounded-lg shadow-md lg:col-span-3">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-semibold">Upcoming Meetings</h3>
+                            <button id="openCreateMeetingModalBtn" class="hidden admin-only btn-primary text-sm font-semibold py-2 px-4 rounded-md">Create Meeting</button>
+                        </div>
+                        <div id="meetingsList" class="space-y-4">
+                            <p class="text-gray-500">No upcoming meetings scheduled.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Admin View -->
-            <div id="adminView" class="hidden">
-                <div class="bg-white p-6 rounded-lg shadow-md">
-                    <h2 class="text-2xl font-bold mb-4">Admin Dashboard</h2>
-                    
-                    <!-- Department Selection -->
-                    <div class="mb-6">
-                        <h3 class="text-xl font-semibold mb-3">Select Department to Manage</h3>
-                        <div id="departmentTabs" class="flex space-x-2 border-b">
-                            <button data-dept="DM" class="dept-tab py-2 px-4 font-medium border-b-2 border-orange-primary text-orange-primary">Digital Marketing</button>
-                            <button data-dept="EM" class="dept-tab py-2 px-4 font-medium text-gray-500 border-transparent">Ecommerce</button>
-                            <button data-dept="FB" class="dept-tab py-2 px-4 font-medium text-gray-500 border-transparent">Food & Beverages</button>
-                        </div>
+            <!-- Admin-Only View -->
+            <div id="adminView" class="hidden admin-only mt-8 bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-bold mb-4 border-b pb-2">Admin Panel</h2>
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Attendance Approvals -->
+                    <div>
+                         <h3 class="text-xl font-semibold mb-4">Pending Attendance Requests</h3>
+                         <div id="pendingAttendanceList" class="space-y-3 max-h-96 overflow-y-auto">
+                            <p class="text-gray-500">No pending requests.</p>
+                         </div>
                     </div>
-                    
-                    <div id="adminContent" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <!-- Delegate Tasks -->
-                        <div>
-                            <h3 class="text-xl font-semibold mb-4">Delegate Task</h3>
-                            <div class="space-y-4 p-4 border rounded-lg">
-                                <div class="mb-4">
-                                    <label for="taskEmployee" class="block text-sm font-medium mb-1">Assign To</label>
-                                    <select id="taskEmployee" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 ring-orange-primary">
-                                        <!-- Options populated by JS -->
-                                    </select>
-                                </div>
-                                <div class="mb-4">
-                                    <div class="flex justify-between items-center mb-1">
-                                        <label for="taskDescription" class="block text-sm font-medium">Task Description</label>
-                                        <button id="generateTaskDescBtn" class="text-xs bg-orange-secondary text-white px-2 py-1 rounded-md hover:bg-orange-primary">✨ Generate</button>
-                                    </div>
-                                    <textarea id="taskDescription" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 ring-orange-primary" placeholder="Describe the task or enter a title and click 'Generate'"></textarea>
-                                </div>
-                                <div class="mb-4">
-                                    <label for="taskDeadline" class="block text-sm font-medium mb-1">Deadline</label>
-                                    <input type="date" id="taskDeadline" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 ring-orange-primary">
-                                </div>
-                                <button id="delegateTaskBtn" class="w-full btn-primary py-2 px-4 rounded-md font-semibold">Delegate Task</button>
-                                <p id="delegateSuccess" class="text-green-500 text-sm mt-2"></p>
-                                <p id="delegateError" class="text-red-500 text-sm mt-2"></p>
-                            </div>
+                     <!-- Admin Task Oversight -->
+                     <div>
+                        <h3 class="text-xl font-semibold mb-4">All Delegated Tasks (Oversight)</h3>
+                        <div id="adminTasksOversightList" class="space-y-3 max-h-96 overflow-y-auto">
+                           <p class="text-gray-500">No tasks delegated yet.</p>
                         </div>
-                        
-                        <!-- Mark Attendance -->
-                        <div>
-                            <h3 class="text-xl font-semibold mb-4">Mark Attendance</h3>
-                             <div class="space-y-4 p-4 border rounded-lg">
-                                 <div class="mb-4">
-                                    <label for="attendanceDate" class="block text-sm font-medium mb-1">Select Date</label>
-                                    <input type="date" id="attendanceDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 ring-orange-primary">
-                                </div>
-                                <div id="attendanceList" class="space-y-3 max-h-96 overflow-y-auto">
-                                   <!-- Employee list populated by JS -->
-                                   <p class="text-gray-500">Select a date and department to see employees.</p>
-                                </div>
-                                <button id="saveAttendanceBtn" class="w-full mt-4 btn-primary py-2 px-4 rounded-md font-semibold">Save Attendance</button>
-                                <p id="attendanceSuccess" class="text-green-500 text-sm mt-2"></p>
-                                <p id="attendanceError" class="text-red-500 text-sm mt-2"></p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                     </div>
+                 </div>
             </div>
         </main>
+
+    </div> <!-- End App Container -->
+
+    <!-- Modals -->
+     <!-- Clock Out Modal (NEW) -->
+    <div id="clockOutModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-40">
+        <div class="modal-content bg-white w-full max-w-lg p-6 rounded-lg shadow-xl opacity-0 scale-95">
+            <h3 class="text-xl font-semibold mb-4">Clock Out</h3>
+            <p class="text-sm text-gray-600 mb-4">Please provide a brief summary of the work you completed during this session.</p>
+            <div>
+                <label for="workDone" class="block text-sm font-medium mb-1">Work Summary</label>
+                <textarea id="workDone" rows="5" class="w-full px-3 py-2 border border-gray-300 rounded-md"></textarea>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button onclick="closeModal('clockOutModal')" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-md">Cancel</button>
+                <button id="submitClockOutBtn" class="btn-primary font-semibold py-2 px-4 rounded-md">Submit & Clock Out</button>
+            </div>
+        </div>
+    </div>
+    <!-- Delegate Task Modal -->
+    <div id="delegateTaskModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-40">
+        <div class="modal-content bg-white w-full max-w-lg p-6 rounded-lg shadow-xl opacity-0 scale-95">
+            <h3 class="text-xl font-semibold mb-4">Delegate a New Task</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="taskAssignee" class="block text-sm font-medium mb-1">Assign To</label>
+                    <select id="taskAssignee" class="w-full px-3 py-2 border border-gray-300 rounded-md"></select>
+                </div>
+                <div>
+                    <label for="taskDescription" class="block text-sm font-medium mb-1">Task Description</label>
+                    <textarea id="taskDescription" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-md"></textarea>
+                </div>
+                <div>
+                     <label for="taskDeadline" class="block text-sm font-medium mb-1">Deadline</label>
+                     <input type="date" id="taskDeadline" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button onclick="closeModal('delegateTaskModal')" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-md">Cancel</button>
+                <button id="submitTaskDelegationBtn" class="btn-primary font-semibold py-2 px-4 rounded-md">Delegate</button>
+            </div>
+        </div>
+    </div>
+    <!-- Create Meeting Modal -->
+    <div id="createMeetingModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-40">
+        <div class="modal-content bg-white w-full max-w-lg p-6 rounded-lg shadow-xl opacity-0 scale-95">
+             <h3 class="text-xl font-semibold mb-4">Create a New Meeting</h3>
+             <div class="space-y-3 max-h-[70vh] overflow-y-auto pr-2">
+                <div><label for="meetingTopic" class="text-sm font-medium">Topic</label><input type="text" id="meetingTopic" class="w-full mt-1 px-3 py-2 border rounded-md"></div>
+                <div><label for="meetingDateTime" class="text-sm font-medium">Date & Time</label><input type="datetime-local" id="meetingDateTime" class="w-full mt-1 px-3 py-2 border rounded-md"></div>
+                <div><label for="meetingAttendees" class="text-sm font-medium">Attendees</label><input type="text" id="meetingAttendees" placeholder="e.g., ALL, DM, or specific EmployeeIDs" class="w-full mt-1 px-3 py-2 border rounded-md"></div>
+                <div><label for="meetingLink" class="text-sm font-medium">Google Meet Link</label><input type="url" id="meetingLink" class="w-full mt-1 px-3 py-2 border rounded-md"></div>
+                <div><label for="meetingAddress" class="text-sm font-medium">Address (Optional)</label><input type="text" id="meetingAddress" class="w-full mt-1 px-3 py-2 border rounded-md"></div>
+                <div><label for="meetingFileLink" class="text-sm font-medium">File Link (Optional, e.g., Google Drive)</label><input type="url" id="meetingFileLink" class="w-full mt-1 px-3 py-2 border rounded-md"></div>
+                <div><label for="meetingDescription" class="text-sm font-medium">Description</label><textarea id="meetingDescription" rows="3" class="w-full mt-1 px-3 py-2 border rounded-md"></textarea></div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button onclick="closeModal('createMeetingModal')" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-md">Cancel</button>
+                <button id="submitMeetingBtn" class="btn-primary font-semibold py-2 px-4 rounded-md">Create Meeting</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // !!! IMPORTANT !!!
-            // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
-            const GAS_URL = 'https://script.google.com/macros/s/AKfycbykxzORIqAqpYVNeHNmNpDhMdtehbOqr0m3NtzN5xSpXmYLyqAIFZHgk6eQxzNrgHT9Nw/exec'; // e.g. 'https://script.google.com/macros/s/...'
+        dayjs.extend(window.dayjs_plugin_isToday);
+        dayjs.extend(window.dayjs_plugin_isTomorrow);
 
+        document.addEventListener('DOMContentLoaded', () => {
+            const GAS_URL = 'https://script.google.com/macros/s/AKfycbykxzORIqAqpYVNeHNmNpDhMdtehbOqr0m3NtzN5xSpXmYLyqAIFZHgk6eQxzNrgHT9Nw/exec'; // PASTE YOUR GOOGLE APPS SCRIPT URL HERE
             if (!GAS_URL) {
-                document.getElementById('app').innerHTML = `
-                    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 max-w-2xl mx-auto rounded-md" role="alert">
-                      <p class="font-bold">Configuration Error</p>
-                      <p>The Google Apps Script URL is missing. Please follow the setup instructions in the README.md file, deploy your script, and paste the URL into the <code>GAS_URL</code> variable in the <code>index.html</code> file.</p>
-                    </div>
-                `;
+                document.body.innerHTML = `<div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 max-w-2xl mx-auto rounded-md mt-10" role="alert"><p class="font-bold">Configuration Error:</p><p>The Google Apps Script URL is missing. Please follow the setup instructions, deploy your script, and paste the URL into the <code>GAS_URL</code> variable in this file.</p></div>`;
                 return;
             }
             
-            // State Management
             let currentUser = null;
-            let currentAdminDept = 'DM';
+            let currentAuthToken = null;
+            let currentClockStatus = 'OUT';
+            let allEmployees = [];
+            let allTasksForAdmin = [];
+            let myTasks = [];
 
-            // DOM Elements
             const loadingEl = document.getElementById('loading');
-            const loginSection = document.getElementById('loginSection');
-            const dashboard = document.getElementById('dashboard');
-            const loginForm = document.getElementById('loginForm');
-            const loginError = document.getElementById('loginError');
-            const userInfo = document.getElementById('userInfo');
-            const userNameEl = document.getElementById('userName');
-            const userDeptEl = document.getElementById('userDept');
-            const logoutButton = document.getElementById('logoutButton');
-
-            const employeeView = document.getElementById('employeeView');
-            const adminView = document.getElementById('adminView');
-
-            // --- Utility Functions ---
+            const toastEl = document.getElementById('message-toast');
+            
             const showLoading = (show) => loadingEl.classList.toggle('hidden', !show);
-            const clearMessages = () => {
-                document.querySelectorAll('.text-red-500, .text-green-500').forEach(el => el.textContent = '');
+            const showToast = (message, isError = false) => {
+                toastEl.textContent = message;
+                toastEl.classList.toggle('bg-red-500', isError);
+                toastEl.classList.toggle('bg-green-500', !isError);
+                toastEl.classList.remove('hidden');
+                setTimeout(() => toastEl.classList.add('hidden'), 3000);
             };
 
-            const deptMap = {
-                'DM': 'Digital Marketing',
-                'EM': 'Ecommerce',
-                'FB': 'Food & Beverages'
-            };
-
-            // --- Gemini API Call Function ---
-            async function callGemini(prompt) {
+            async function apiCall(action, payload = {}) {
                 showLoading(true);
-                // The API key is left as an empty string.
-                // The Canvas environment will automatically provide a key for API calls.
-                const apiKey = "";
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-
-                const payload = {
-                    contents: [{ parts: [{ text: prompt }] }],
-                };
-
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`API call failed with status: ${response.status}`);
-                    }
-
-                    const result = await response.json();
-                    const candidate = result.candidates?.[0];
-
-                    if (candidate && candidate.content?.parts?.[0]?.text) {
-                        return { success: true, text: candidate.content.parts[0].text };
-                    } else {
-                        console.error('Unexpected Gemini API response structure:', result);
-                        throw new Error('Could not extract text from Gemini response.');
-                    }
-                } catch (error) {
-                    console.error('Gemini API Error:', error);
-                    // Do not use alert() as it's blocked in iframes.
-                    // Instead, we can show an error in a specific UI element if needed,
-                    // but for now, logging to console is sufficient for debugging.
-                    return { success: false, text: null };
-                } finally {
-                    showLoading(false);
+                if (currentUser && currentAuthToken) {
+                    payload.employeeId = currentUser.id;
+                    payload.authToken = currentAuthToken;
                 }
-            }
-
-
-            // --- Google Apps Script API Call Function ---
-            async function apiCall(action, payload) {
-                showLoading(true);
-                clearMessages();
                 try {
                     const response = await fetch(GAS_URL, {
                         method: 'POST',
@@ -290,335 +268,352 @@
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify({ action, ...payload })
                     });
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    if (!response.ok) throw new Error(`Network error: ${response.statusText}`);
                     const result = await response.json();
                     if (result.status === 'error') throw new Error(result.message);
                     return result;
                 } catch (error) {
-                    console.error('API Call Error:', error);
-                    // A custom modal or inline message is better than alert().
-                    // For this app, we'll log the error and let specific handlers show UI feedback.
+                    console.error(`API Call Error (${action}):`, error);
+                    showToast(error.message, true);
+                    const loginErrorEl = document.getElementById('loginError');
+                    if (loginErrorEl) loginErrorEl.textContent = error.message;
                     return { status: 'error', message: error.message };
                 } finally {
                     showLoading(false);
                 }
             }
+            
+            window.openModal = (modalId) => {
+                const modal = document.getElementById(modalId);
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modal.querySelector('.modal-content').classList.remove('scale-95', 'opacity-0');
+                }, 10);
+            }
+            window.closeModal = (modalId) => {
+                const modal = document.getElementById(modalId);
+                modal.querySelector('.modal-content').classList.add('scale-95', 'opacity-0');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            }
 
-            // --- Authentication ---
             function checkSession() {
                 const user = sessionStorage.getItem('currentUser');
-                if (user) {
+                const token = sessionStorage.getItem('currentAuthToken');
+                if (user && token) {
                     currentUser = JSON.parse(user);
+                    currentAuthToken = token;
                     showDashboard();
                 }
             }
 
-            loginForm.addEventListener('submit', async (e) => {
+            document.getElementById('loginForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const employeeId = document.getElementById('employeeId').value.trim();
-                const email = document.getElementById('email').value.trim();
-                const password = document.getElementById('password').value;
-                
-                const result = await apiCall('login', { employeeId, email, password });
+                document.getElementById('loginError').textContent = '';
+                const result = await apiCall('login', { 
+                    employeeId: document.getElementById('employeeId').value.trim(),
+                    email: document.getElementById('email').value.trim(),
+                    password: document.getElementById('password').value
+                });
 
                 if (result.status === 'success') {
                     currentUser = result.user;
+                    currentAuthToken = result.authToken;
                     sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    sessionStorage.setItem('currentAuthToken', currentAuthToken);
                     showDashboard();
-                } else {
-                    loginError.textContent = result.message || 'Invalid credentials.';
                 }
             });
 
-            logoutButton.addEventListener('click', () => {
-                currentUser = null;
-                sessionStorage.removeItem('currentUser');
-                loginSection.classList.remove('hidden');
-                dashboard.classList.add('hidden');
-                userInfo.classList.add('hidden');
+            document.getElementById('logoutButton').addEventListener('click', () => {
+                sessionStorage.clear();
+                window.location.reload();
             });
-            
-            // --- Dashboard Rendering ---
-            function showDashboard() {
-                loginSection.classList.add('hidden');
-                dashboard.classList.remove('hidden');
-                userInfo.classList.remove('hidden');
 
-                userNameEl.textContent = `Welcome, ${currentUser.name}`;
-                userDeptEl.textContent = `Dept: ${deptMap[currentUser.department]}`;
+            async function showDashboard() {
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                document.getElementById('userInfo').classList.remove('hidden');
+                document.getElementById('logoutButton').classList.remove('hidden');
+
+                document.getElementById('userName').textContent = currentUser.name;
+                document.getElementById('userDept').textContent = `Dept: ${currentUser.department}`;
+
+                document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', currentUser.role !== 'admin'));
+
+                const data = await apiCall('getEmployeeData');
+                if (data.status === 'success') {
+                    myTasks = data.tasks;
+                    if (data.tasks.allTasksForAdmin) allTasksForAdmin = data.tasks.allTasksForAdmin;
+                    currentClockStatus = data.clockStatus || 'OUT';
+                    renderTimeClock();
+                    renderTasks('today');
+                    renderMeetings(data.meetings);
+                    renderAttendanceHistory(data.attendanceRequests);
+                }
 
                 if (currentUser.role === 'admin') {
-                    adminView.classList.remove('hidden');
-                    employeeView.classList.add('hidden');
-                    initializeAdminView();
-                } else {
-                    employeeView.classList.remove('hidden');
-                    adminView.classList.add('hidden');
-                    initializeEmployeeView();
+                    loadAdminData();
                 }
-            }
-
-            // --- Employee View Logic ---
-            const clockInBtn = document.getElementById('clockInBtn');
-            const clockOutBtn = document.getElementById('clockOutBtn');
-            const workDoneDiv = document.getElementById('workDoneDiv');
-            const submitWorkDoneBtn = document.getElementById('submitWorkDoneBtn');
-            const refineWorkDoneBtn = document.getElementById('refineWorkDoneBtn');
-            const timeLogSuccess = document.getElementById('timeLogSuccess');
-            const timeLogError = document.getElementById('timeLogError');
-            
-            function initializeEmployeeView() {
-                updateTime();
-                setInterval(updateTime, 1000);
-                loadEmployeeData();
-            }
-
-            function updateTime() {
-                document.getElementById('currentTime').textContent = dayjs().format('h:mm:ss A');
             }
             
-            async function loadEmployeeData() {
-                const result = await apiCall('getEmployeeData', { employeeId: currentUser.id });
-                if (result.status === 'success') {
-                    // Update Time Clock state
-                    if(result.lastLog === 'IN') {
-                        clockInBtn.classList.add('hidden');
-                        clockOutBtn.classList.remove('hidden');
-                    } else {
-                        clockInBtn.classList.remove('hidden');
-                        clockOutBtn.classList.add('hidden');
-                    }
-
-                    // Render Tasks
-                    const tasksList = document.getElementById('tasksList');
-                    if (result.tasks && result.tasks.length > 0) {
-                        tasksList.innerHTML = result.tasks.map(task => `
-                            <div class="border rounded-lg p-4 flex justify-between items-start">
-                                <div>
-                                    <p class="font-semibold">${task.description}</p>
-                                    <p class="text-sm text-red-600">Deadline: ${dayjs(task.deadline).format('MMMM D, YYYY')}</p>
-                                </div>
-                                <span class="text-sm font-medium px-3 py-1 rounded-full ${task.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${task.status}</span>
-                            </div>
-                        `).join('');
-                    } else {
-                         tasksList.innerHTML = `<p class="text-gray-500">You have no assigned tasks.</p>`;
-                    }
-                    
-                    // Render Meeting
-                    const meetingDetails = document.getElementById('meetingDetails');
-                    if(result.meeting) {
-                        const meeting = result.meeting;
-                        meetingDetails.innerHTML = `
-                             <h4 class="font-bold text-lg">${meeting.title}</h4>
-                             <p class="text-gray-600 mb-2"><strong>Date & Time:</strong> ${dayjs(meeting.dateTime).format('MMMM D, YYYY h:mm A')}</p>
-                             <p class="text-gray-600 mb-3">${meeting.details}</p>
-                             <a href="${meeting.link}" target="_blank" class="inline-block btn-primary text-white font-semibold py-2 px-5 rounded-md">Join Google Meet</a>
-                        `;
-                    } else {
-                         meetingDetails.innerHTML = `<p class="text-gray-500">No upcoming meetings.</p>`;
-                    }
-                }
+            async function loadAdminData() {
+                const pendingData = await apiCall('getPendingAttendance');
+                if(pendingData.status === 'success') renderPendingAttendance(pendingData.requests);
+                renderAdminTaskOversight();
             }
 
-            clockInBtn.addEventListener('click', async () => {
-                const result = await apiCall('clockIn', { employeeId: currentUser.id });
-                if (result.status === 'success') {
-                    timeLogSuccess.textContent = 'Successfully clocked in!';
-                    clockInBtn.classList.add('hidden');
-                    clockOutBtn.classList.remove('hidden');
-                } else {
-                    timeLogError.textContent = result.message;
-                }
-            });
-
-            clockOutBtn.addEventListener('click', () => {
-                workDoneDiv.classList.remove('hidden');
-                clockOutBtn.classList.add('hidden');
-            });
-
-            refineWorkDoneBtn.addEventListener('click', async () => {
-                const workDoneTextarea = document.getElementById('workDone');
-                const originalText = workDoneTextarea.value;
-
-                if (!originalText.trim()) {
-                    timeLogError.textContent = 'Please write something about your work first.';
-                    return;
-                }
+            // --- TIME CLOCK FUNCTIONS ---
+            function renderTimeClock() {
+                const statusTextEl = document.getElementById('clockStatusText');
+                const clockButtonEl = document.getElementById('clockButton');
                 
-                clearMessages();
-                const prompt = `Act as a helpful assistant. Refine the following daily work summary into a more professional and structured format. Use bullet points for clarity and ensure the tone is suitable for a workplace report. Keep it concise. Original text: "${originalText}"`;
-                const result = await callGemini(prompt);
-                
-                if (result.success) {
-                    workDoneTextarea.value = result.text;
-                    timeLogSuccess.textContent = 'Summary refined by AI!';
+                if (currentClockStatus === 'IN') {
+                    statusTextEl.textContent = 'Clocked In';
+                    statusTextEl.classList.add('text-green-600');
+                    statusTextEl.classList.remove('text-red-600');
+                    clockButtonEl.textContent = 'Clock Out';
+                    clockButtonEl.className = 'w-full font-bold py-2.5 px-4 rounded-md btn-danger';
                 } else {
-                    timeLogError.textContent = 'AI refinement failed. Please try again.';
+                    statusTextEl.textContent = 'Clocked Out';
+                    statusTextEl.classList.add('text-red-600');
+                    statusTextEl.classList.remove('text-green-600');
+                    clockButtonEl.textContent = 'Clock In';
+                    clockButtonEl.className = 'w-full font-bold py-2.5 px-4 rounded-md btn-primary';
                 }
-            });
+            }
             
-            submitWorkDoneBtn.addEventListener('click', async () => {
-                const workDone = document.getElementById('workDone').value;
-                if (!workDone) {
-                    timeLogError.textContent = 'Please describe the work you did.';
-                    return;
-                }
-                const result = await apiCall('clockOut', { employeeId: currentUser.id, workDone });
-                if (result.status === 'success') {
-                    timeLogSuccess.textContent = 'Successfully clocked out!';
-                    workDoneDiv.classList.add('hidden');
+            document.getElementById('clockButton').addEventListener('click', async () => {
+                if (currentClockStatus === 'OUT') {
+                    const result = await apiCall('clockIn');
+                    if (result.status === 'success') {
+                        showToast('You have been successfully clocked in!');
+                        currentClockStatus = 'IN';
+                        renderTimeClock();
+                    }
+                } else {
                     document.getElementById('workDone').value = '';
-                    clockInBtn.classList.remove('hidden');
-                } else {
-                     timeLogError.textContent = result.message;
+                    openModal('clockOutModal');
                 }
             });
 
-
-            // --- Admin View Logic ---
-            function initializeAdminView() {
-                const today = dayjs().format('YYYY-MM-DD');
-                document.getElementById('attendanceDate').value = today;
-                document.getElementById('taskDeadline').min = today;
+            document.getElementById('submitClockOutBtn').addEventListener('click', async () => {
+                const workDone = document.getElementById('workDone').value;
+                if (!workDone.trim()) {
+                    showToast('Work summary cannot be empty.', true);
+                    return;
+                }
                 
-                loadAdminDepartmentData(currentAdminDept);
+                const result = await apiCall('clockOut', { workDone });
+                if (result.status === 'success') {
+                    showToast('You have been successfully clocked out!');
+                    closeModal('clockOutModal');
+                    currentClockStatus = 'OUT';
+                    renderTimeClock();
+                }
+            });
 
-                document.querySelectorAll('.dept-tab').forEach(tab => {
-                    tab.addEventListener('click', () => {
-                        currentAdminDept = tab.dataset.dept;
-                        document.querySelectorAll('.dept-tab').forEach(t => {
-                            t.classList.remove('border-orange-primary', 'text-orange-primary');
-                            t.classList.add('text-gray-500', 'border-transparent');
-                        });
-                        tab.classList.add('border-orange-primary', 'text-orange-primary');
-                        tab.classList.remove('text-gray-500', 'border-transparent');
-                        loadAdminDepartmentData(currentAdminDept);
+            // --- TASK & OTHER FUNCTIONS ---
+            document.querySelectorAll('.task-filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelector('.task-filter-btn.active').classList.remove('active');
+                    btn.classList.add('active');
+                    renderTasks(btn.dataset.filter);
+                });
+            });
+
+            function renderTasks(filter) {
+                const tasksListEl = document.getElementById('tasksList');
+                let tasksToRender = Array.isArray(myTasks) ? myTasks : [];
+                
+                if (filter === 'today') {
+                    tasksToRender = tasksToRender.filter(t => dayjs(t.deadline).isToday());
+                } else if (filter === 'tomorrow') {
+                    tasksToRender = tasksToRender.filter(t => dayjs(t.deadline).isTomorrow());
+                } else if (filter === 'next3days') {
+                    const today = dayjs().startOf('day');
+                    const threeDaysFromNow = today.add(4, 'day');
+                    tasksToRender = tasksToRender.filter(t => {
+                        const deadline = dayjs(t.deadline);
+                        return deadline.isAfter(today) && deadline.isBefore(threeDaysFromNow);
                     });
-                });
-                
-                document.getElementById('attendanceDate').addEventListener('change', () => {
-                     loadAdminDepartmentData(currentAdminDept);
-                });
-                
-                document.getElementById('delegateTaskBtn').addEventListener('click', delegateTask);
-                document.getElementById('saveAttendanceBtn').addEventListener('click', saveAttendance);
-                document.getElementById('generateTaskDescBtn').addEventListener('click', generateTaskDescription);
+                }
+
+                if (tasksToRender.length === 0) {
+                    tasksListEl.innerHTML = `<p class="text-gray-500 p-4 text-center">No tasks for this period.</p>`;
+                    return;
+                }
+                tasksListEl.innerHTML = tasksToRender.map(task => `
+                    <div class="border rounded-lg p-3">
+                        <p class="font-medium">${task.description}</p>
+                        <div class="text-xs text-gray-500 mt-1 flex justify-between">
+                            <span>Deadline: <span class="font-semibold text-red-600">${dayjs(task.deadline).format('MMM D, YYYY')}</span></span>
+                            <span>By: ${task.delegatedBy}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            function renderMeetings(meetings) {
+                const meetingsListEl = document.getElementById('meetingsList');
+                if (!meetings || meetings.length === 0) {
+                    meetingsListEl.innerHTML = `<p class="text-gray-500">No upcoming meetings scheduled.</p>`;
+                    return;
+                }
+                meetingsListEl.innerHTML = meetings.map(m => `
+                    <div class="border rounded-lg p-4">
+                        <div class="flex justify-between items-start">
+                             <div>
+                                <h4 class="font-bold text-lg">${m.topic}</h4>
+                                <p class="text-sm font-semibold text-orange-primary">${dayjs(m.dateTime).format('MMM D, YYYY @ h:mm A')}</p>
+                             </div>
+                             ${m.link ? `<a href="${m.link}" target="_blank" class="btn-primary text-sm font-semibold py-2 px-4 rounded-md">Join Meet</a>` : ''}
+                        </div>
+                        <p class="text-sm mt-2 text-gray-600">${m.description || ''}</p>
+                        ${m.address ? `<p class="text-xs mt-1"><b>Location:</b> ${m.address}</p>` : ''}
+                        ${m.fileLink ? `<p class="text-xs mt-1"><b>Attachment:</b> <a href="${m.fileLink}" target="_blank" class="text-blue-600 hover:underline">View File</a></p>` : ''}
+                    </div>
+                `).join('');
             }
             
-            async function loadAdminDepartmentData(department) {
-                const date = document.getElementById('attendanceDate').value;
-                const result = await apiCall('getDepartmentData', { department, date });
-
+            document.getElementById('submitAttendanceBtn').addEventListener('click', async () => {
+                const workLocation = document.getElementById('workLocation').value;
+                const result = await apiCall('requestAttendance', { workLocation });
                 if (result.status === 'success') {
-                    // Populate employee dropdown for tasks
-                    const taskEmployeeSelect = document.getElementById('taskEmployee');
-                    taskEmployeeSelect.innerHTML = result.employees.map(emp => `<option value="${emp.id}">${emp.name} (${emp.id})</option>`).join('');
+                    showToast(result.message);
+                    const data = await apiCall('getEmployeeData');
+                    if (data.status === 'success') renderAttendanceHistory(data.attendanceRequests);
+                }
+            });
+            
+            function renderAttendanceHistory(requests) {
+                const historyEl = document.getElementById('attendanceHistory');
+                 if (!requests || requests.length === 0) {
+                    historyEl.innerHTML = `<p class="text-gray-500">No recent requests found.</p>`;
+                    return;
+                }
+                historyEl.innerHTML = requests.map(r => {
+                    let statusColor = 'text-yellow-600';
+                    if (r.status === 'Approved') statusColor = 'text-green-600';
+                    if (r.status === 'Rejected') statusColor = 'text-red-600';
+                    return `
+                    <div class="flex justify-between items-center text-sm">
+                        <span>${dayjs(r.date).format('MMM D')} - ${r.location}</span>
+                        <span class="font-bold ${statusColor}">${r.status}</span>
+                    </div>
+                    `
+                }).join('');
+            }
 
-                    // Populate attendance list
-                    const attendanceList = document.getElementById('attendanceList');
-                    if(result.employees.length > 0) {
-                       attendanceList.innerHTML = result.employees.map(emp => {
-                           const currentStatus = emp.attendanceStatus || 'Present (Office)';
-                           return `
-                            <div class="flex items-center justify-between p-2 border-b">
-                                <span>${emp.name}</span>
-                                <select data-employee-id="${emp.id}" class="attendance-status w-48 px-2 py-1 border border-gray-300 rounded-md text-sm">
-                                    <option ${currentStatus === 'Present (Office)' ? 'selected' : ''}>Present (Office)</option>
-                                    <option ${currentStatus === 'Present (WFH)' ? 'selected' : ''}>Present (WFH)</option>
-                                    <option ${currentStatus === 'Absent' ? 'selected' : ''}>Absent</option>
-                                    <option ${currentStatus === 'Leave' ? 'selected' : ''}>Leave</option>
-                                    <option ${currentStatus === 'Half Day' ? 'selected' : ''}>Half Day</option>
-                                    <option ${currentStatus === 'Holiday' ? 'selected' : ''}>Holiday</option>
-                                </select>
-                            </div>
-                           `;
-                       }).join('');
+            document.getElementById('openDelegateTaskModalBtn').addEventListener('click', async () => {
+                if(allEmployees.length === 0) {
+                    const result = await apiCall('getAllEmployees');
+                    if(result.status === 'success') allEmployees = result.employees;
+                }
+                const assigneeSelect = document.getElementById('taskAssignee');
+                assigneeSelect.innerHTML = allEmployees.filter(e => e.id !== currentUser.id)
+                    .map(e => `<option value="${e.id}">${e.name} (${e.id})</option>`).join('');
+                document.getElementById('taskDeadline').min = dayjs().format('YYYY-MM-DD');
+                openModal('delegateTaskModal');
+            });
+            
+            document.getElementById('submitTaskDelegationBtn').addEventListener('click', async () => {
+                const payload = {
+                    delegatorId: currentUser.id,
+                    assigneeId: document.getElementById('taskAssignee').value,
+                    description: document.getElementById('taskDescription').value,
+                    deadline: document.getElementById('taskDeadline').value
+                };
+                if(!payload.assigneeId || !payload.description || !payload.deadline) {
+                    showToast('All fields are required.', true);
+                    return;
+                }
+                const action = 'delegateTaskByEmployee';
+                const result = await apiCall(action, payload);
+                if (result.status === 'success') {
+                    showToast('Task delegated successfully!');
+                    closeModal('delegateTaskModal');
+                    showDashboard();
+                }
+            });
+
+             document.getElementById('openCreateMeetingModalBtn').addEventListener('click', () => openModal('createMeetingModal'));
+             document.getElementById('submitMeetingBtn').addEventListener('click', async () => {
+                const payload = {
+                    topic: document.getElementById('meetingTopic').value,
+                    dateTime: document.getElementById('meetingDateTime').value,
+                    attendees: document.getElementById('meetingAttendees').value,
+                    link: document.getElementById('meetingLink').value,
+                    address: document.getElementById('meetingAddress').value,
+                    fileLink: document.getElementById('meetingFileLink').value,
+                    description: document.getElementById('meetingDescription').value
+                };
+                 if(!payload.topic || !payload.dateTime || !payload.attendees) {
+                    showToast('Topic, Date/Time, and Attendees are required.', true);
+                    return;
+                }
+                const result = await apiCall('createMeeting', { meetingDetails: payload });
+                if (result.status === 'success') {
+                    showToast('Meeting created successfully!');
+                    closeModal('createMeetingModal');
+                    showDashboard();
+                }
+             });
+
+            function renderPendingAttendance(requests) {
+                const listEl = document.getElementById('pendingAttendanceList');
+                if(!requests || requests.length === 0) {
+                    listEl.innerHTML = `<p class="text-gray-500 text-center p-4">No pending requests.</p>`;
+                    return;
+                }
+                listEl.innerHTML = requests.map(r => `
+                    <div class="border rounded-lg p-3 flex justify-between items-center">
+                        <div>
+                            <p class="font-semibold">${r.employeeName} <span class="text-xs text-gray-500">(${r.employeeId})</span></p>
+                            <p class="text-sm">${r.location} on ${dayjs(r.date).format('MMM D')}</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="approve-btn bg-green-500 text-white text-xs font-bold py-1 px-2 rounded" data-id="${r.recordId}">Approve</button>
+                            <button class="reject-btn bg-red-500 text-white text-xs font-bold py-1 px-2 rounded" data-id="${r.recordId}">Reject</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            document.getElementById('pendingAttendanceList').addEventListener('click', async (e) => {
+                const target = e.target;
+                const recordId = target.dataset.id;
+                if(!recordId) return;
+                target.disabled = true;
+
+                const isApproval = target.classList.contains('approve-btn');
+                if(isApproval || target.classList.contains('reject-btn')) {
+                    const result = await apiCall('approveAttendance', { recordId: recordId, approved: isApproval });
+                    if(result.status === 'success') {
+                        showToast(`Request ${isApproval ? 'Approved' : 'Rejected'}`);
+                        loadAdminData();
                     } else {
-                         attendanceList.innerHTML = `<p class="text-gray-500">No employees found in this department.</p>`;
+                        target.disabled = false;
                     }
                 }
-            }
-
-            async function generateTaskDescription() {
-                const taskDescriptionTextarea = document.getElementById('taskDescription');
-                const delegateError = document.getElementById('delegateError');
-                const delegateSuccess = document.getElementById('delegateSuccess');
-                const taskTitle = taskDescriptionTextarea.value;
-                
-                if (!taskTitle.trim()) {
-                    delegateError.textContent = 'Please provide a title for the task first.';
-                    return;
-                }
-
-                clearMessages();
-                const prompt = `Act as a project manager. Expand the following task title into a clear, detailed, and actionable task description for an employee. Include sections for 'Objective', 'Key Steps' (as bullet points), and 'Expected Outcome'. Task Title: "${taskTitle}"`;
-                const result = await callGemini(prompt);
-                
-                if (result.success) {
-                    taskDescriptionTextarea.value = result.text;
-                    delegateSuccess.textContent = 'Description generated by AI!';
-                } else {
-                    delegateError.textContent = 'AI generation failed. Please try again.';
-                }
-            }
+            });
             
-            async function delegateTask() {
-                const employeeId = document.getElementById('taskEmployee').value;
-                const description = document.getElementById('taskDescription').value;
-                const deadline = document.getElementById('taskDeadline').value;
-                const delegateError = document.getElementById('delegateError');
-                const delegateSuccess = document.getElementById('delegateSuccess');
-
-                if(!employeeId || !description || !deadline) {
-                    delegateError.textContent = 'All fields are required.';
+             function renderAdminTaskOversight() {
+                const listEl = document.getElementById('adminTasksOversightList');
+                if(!allTasksForAdmin || allTasksForAdmin.length === 0) {
+                    listEl.innerHTML = `<p class="text-gray-500 text-center p-4">No tasks delegated yet.</p>`;
                     return;
                 }
-                
-                const result = await apiCall('delegateTask', { employeeId, description, deadline });
-                if (result.status === 'success') {
-                    delegateSuccess.textContent = 'Task delegated successfully!';
-                    document.getElementById('taskDescription').value = '';
-                    document.getElementById('taskDeadline').value = '';
-                } else {
-                    delegateError.textContent = result.message;
-                }
-            }
-            
-            async function saveAttendance() {
-                const date = document.getElementById('attendanceDate').value;
-                const attendanceError = document.getElementById('attendanceError');
-                const attendanceSuccess = document.getElementById('attendanceSuccess');
-
-                if(!date) {
-                    attendanceError.textContent = 'Please select a date.';
-                    return;
-                }
-                
-                const attendanceData = [];
-                document.querySelectorAll('.attendance-status').forEach(select => {
-                    attendanceData.push({
-                        employeeId: select.dataset.employeeId,
-                        status: select.value
-                    });
-                });
-
-                if(attendanceData.length === 0) {
-                    attendanceError.textContent = 'No employees to mark attendance for.';
-                    return;
-                }
-                
-                const result = await apiCall('markAttendance', { date, attendanceData });
-
-                if (result.status === 'success') {
-                    attendanceSuccess.textContent = 'Attendance saved successfully!';
-                } else {
-                    attendanceError.textContent = result.message;
-                }
+                 listEl.innerHTML = allTasksForAdmin.map(task => `
+                    <div class="border rounded-lg p-3 text-sm">
+                        <p>${task.description}</p>
+                        <div class="text-xs text-gray-500 mt-1 flex justify-between">
+                            <span>To: <span class="font-semibold">${task.assigneeId}</span></span>
+                            <span>From: <span class="font-semibold">${task.delegatedBy}</span></span>
+                        </div>
+                    </div>
+                `).join('');
             }
 
-
-            // Initial Load
             checkSession();
         });
     </script>
